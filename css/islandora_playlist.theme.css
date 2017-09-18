@@ -1,0 +1,26 @@
+.playlist {
+    overflow:auto;
+    float: left;
+    width: 62%;
+}
+
+#current_metadata {
+    float: right;
+    width: 60%;
+    overflow-y: auto;
+}
+
+#current_metadata .islandora-metadata {
+    margin-bottom: 8px !important;
+}
+
+#playlist_metadata {
+    clear: both;
+}
+
+.playlist_objects_wrapper {
+    height: 350px;
+    width: 39%;
+    float: left;    
+    overflow-y: auto !important;
+}

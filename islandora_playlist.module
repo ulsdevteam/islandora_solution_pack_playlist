@@ -1,0 +1,260 @@
+<?php
+
+/**
+ * @file
+ * Hooks and callbacks for this module.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function islandora_playlist_menu() {
+  $items = array();
+  $items['admin/islandora/solution_pack_config/playlist'] = array(
+    'title' => 'Playlist',
+    'description' => 'Define playlist options and behavior.',
+    'page callback' => 'drupal_get_form',
+    'access arguments' => array('administer site configuration'),
+    'page arguments' => array('islandora_playlist_admin'),
+    'file' => 'includes/admin.form.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['islandora/object/%islandora_object/get_metadata'] = array(
+    'title' => 'AJAX route for fetching metadata',
+    'page callback' => 'islandora_playlist_get_metadata',
+    'page arguments' => array(2),
+    'type' => MENU_CALLBACK,
+    'access callback' => 'islandora_playlist_access_get_metadata',
+    'access arguments' => array(2),
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ *
+ * We supply a pattern so we can overide templates at the theme level if needed.
+ * we can append a pid to a template and the new template file will be called
+ * (the pids colon should be replaced with a dash).
+ */
+function islandora_playlist_theme($existing, $type, $theme, $path) {
+  return array(
+    'islandora_playlist' => array(
+      'template' => 'theme/islandora-playlist',
+      // We can add pids to the end of this pattern in our preprocess function
+      // and templates will be able to have have a pid appended to the template
+      // name to overide a template on a per object basis. An example template
+      // would be named islandora-playlist--islandora-27.tpl.phps.
+      'pattern' => 'islandora_playlist__',
+      'variables' => array('islandora_object' => NULL),
+    ),
+    'islandora_playlist_playlist' => array(
+      'variables' => array(
+          'compound_object_content' => '',
+          'parent_metadata' => '',
+          'playlist' => ''),
+      'template' => 'templates/islandora-playlist',
+    ),
+    'islandora_playlist_playlist_entry_markup' => array(
+      'variables' => array('idx' => 0,
+            'module_path' => '',
+            'child_obj' => NULL,
+            'get_metadata_link' => '',
+            'multimedia_url' => ''),
+      'template' => 'templates/islandora-playlist-entry',
+    ),
+  );
+}
+
+/**
+ * Implements hook_preprocess_theme().
+ *
+ * This code will set any playlist variables based on inspection of the underlying
+ * islandora_object.
+ */
+function islandora_playlist_preprocess_page(array &$variables) {
+  $item = menu_get_item();
+  if (isset($item['map']) && isset($item['map'][2]) && 
+      ($islandora_object = $item['map'][2]) && is_object($islandora_object) &&
+      (count($item['map']) < 4 || (isset($item['map'][3]) && $item['map'][3] <> 'datastream' && $item['map'][3] <> 'manage'))) {
+    module_load_include('inc', 'islandora_playlist', 'includes/utilities');
+    $results = islandora_playlist_get_compound_object_children($islandora_object);
+
+    $player = islandora_playlist_get_multimedia_player($islandora_object, $results['child_islandora_objects']);
+
+    // Only alter the HTML if there are child objects coming from the call to
+    // get compound object children.
+    if (is_array($results['child_islandora_objects']) && count($results['child_islandora_objects']) > 0) {
+      module_load_include('inc', 'islandora', 'includes/metadata');
+
+      drupal_add_js(islandora_playlist_get_compound_object_children_js_block($results['child_islandora_objects']), 'inline');
+      drupal_add_js(drupal_get_path('module', 'islandora_playlist') . '/js/play_object.js');
+      drupal_add_css(drupal_get_path('module', 'islandora_playlist') . '/css/islandora_playlist.theme.css');
+      
+      // These javascript and CSS are needed for the amplitude player... 
+      // TODO: replace this
+      drupal_add_js(drupal_get_path('module', 'islandora_playlist') . '/js/functions.js');
+      drupal_add_js('sites/all/libraries/amplitudejs/dist/amplitude.js');
+      drupal_add_js('sites/all/libraries/amplitudejs/examples/resources/js/foundation.min.js');
+      drupal_add_css(drupal_get_path('module', 'islandora_playlist') . '/css/styles.css');
+
+      $parent_metadata = islandora_retrieve_metadata_markup($islandora_object, TRUE);
+      $original_content = drupal_render($variables['page']['content']);
+
+      // Remove these variables so that they there is no possibility of them
+      // being rendered twice.
+      $variables['metadata'] = '';
+
+      // now we can set the page contents
+      $variables['page']['content'] = theme('islandora_playlist_playlist',
+              array('islandora_object' => $islandora_object,
+                  'compound_object_content' => $original_content,
+                  'parent_metadata' => $parent_metadata,
+                  'playlist' => implode("\n", $results['compound_object_child_playlist_entry'])));
+    }
+  }
+}
+
+/**
+ * Implements hook_xml_form_builder_forms().
+ */
+function islandora_playlist_xml_form_builder_forms() {
+  $module_path = drupal_get_path('module', 'islandora_playlist');
+  return array(
+    'Playlist MODS form' => array(
+      'form_file' => "$module_path/xml/islandora_playlist_form_mods.xml",
+    ),
+  );
+}
+
+/**
+ * Implements hook_xml_form_builder_form_associations().
+ */
+function islandora_playlist_xml_form_builder_form_associations() {
+  return array(
+    'islandora_playlist_mods_form' => array(
+      'content_model' => 'islandora:playlist_cmodel',
+      'form_name' => 'Playlist MODS form',
+      'dsid' => 'MODS',
+      'title_field' => array('titleInfo', 'title'),
+      'transform' => 'mods_to_dc.xsl',
+      'template' => FALSE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_CMODEL_PID_islandora_view_object().
+ */
+function islandora_playlist_islandora_playlist_cmodel_islandora_view_object($object, $page_number, $page_size) {
+  $output = theme('islandora_playlist', array('islandora_object' => $object));
+  return array('' => $output);
+}
+
+/**
+ * Implements hook_preprocess().
+ */
+function islandora_playlist_preprocess_islandora_playlist(&$variables) {
+  drupal_add_js('misc/form.js');
+  drupal_add_js('misc/collapse.js');
+  $islandora_object = $variables['islandora_object'];
+  $repository = $islandora_object->repository;
+  module_load_include('inc', 'islandora', 'includes/datastream');
+  module_load_include('inc', 'islandora', 'includes/utilities');
+  module_load_include('inc', 'islandora', 'includes/metadata');
+
+  // We should eventually remove the DC object and dc_array code as it only
+  // exists to not break legacy implementations.
+  if (isset($islandora_object['DC']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $islandora_object['DC'])) {
+    try {
+      $dc = $islandora_object['DC']->content;
+      $dc_object = DublinCore::importFromXMLString($dc);
+    }
+    catch (Exception $e) {
+      $variables = array(
+        '@ret' => $e->getMessage(),
+        '@trace' => $e->getTraceAsString(),
+      );
+      watchdog('islandora_playlist', 'Error retrieving object.<br/>Error: @ret<br/>Trace: @trace', $variables, WATCHDOG_ERROR);
+      drupal_set_message(t('Error retrieving object %s %t', array('%s' => $islandora_object->id, '%t' => $e->getMessage())), 'error', FALSE);
+    }
+  }
+  $variables['islandora_dublin_core'] = isset($dc_object) ? $dc_object : NULL;
+  $variables['dc_array'] = isset($dc_object) ? $dc_object->asArray() : array();
+  $variables['islandora_object_label'] = $islandora_object->label;
+  $variables['theme_hook_suggestions'][] = 'islandora_playlist__' . str_replace(':', '_', $islandora_object->id);
+  $variables['parent_collections'] = islandora_get_parents_from_rels_ext($islandora_object);
+  $variables['metadata'] = islandora_retrieve_metadata_markup($islandora_object);
+  $variables['description'] = islandora_retrieve_description_markup($islandora_object);
+
+  // Thumbnail.
+  if (isset($islandora_object['TN']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $islandora_object['TN'])) {
+    $params = array(
+      'title' => $islandora_object->label,
+      'path' => url("islandora/object/{$islandora_object->id}/datastream/TN/view"),
+    );
+    $variables['islandora_thumbnail_img'] = theme('image', $params);
+  }
+  module_load_include('inc', 'islandora', 'includes/solution_packs');
+
+  $params = array();
+
+  $variables['islandora_content'] = '';
+}
+
+/**
+ * Implements hook_process_islandora_object_print().
+ */
+function islandora_playlist_preprocess_islandora_object_print(array &$variables) {
+  $object = $variables['object'];
+  if (in_array('islandora:playlist_cmodel', $object->models)) {
+    $url = url("islandora/object/{$object->id}", array('absolute' => TRUE));
+    $variables['content']['link'] = array(
+      '#weight' => -10,
+      '#markup' => t('Persistent link: !link', array("!link" => l($url, $url))),
+    );
+  }
+}
+
+/**
+ * Function to return the metadata for an AJAX call - called by the play_object
+ * javascript in order to render that metadata as playlist entries are clicked.
+ */
+function islandora_playlist_get_metadata($islandora_object) {
+  if (is_object($islandora_object)) {
+    module_load_include('inc', 'islandora', 'includes/metadata');
+    $print = islandora_retrieve_metadata_markup($islandora_object);
+    $elements = array(
+      'islandora_object' => $islandora_object,
+      'print' => $print,
+    );
+    echo print_r($print, true);
+    exit;
+    
+    print theme('islandora_dublin_core_display', $elements);
+    exit;
+  }
+}
+
+function islandora_playlist_access_get_metadata($islandora_object) {
+  return TRUE;
+}
+
+function islandora_playlist_form_alter(&$form, &$form_state, $form_id) {
+  module_load_include('inc', 'islandora_playlist', 'includes/utilities');
+  if ($form_id == 'islandora_compound_object_manage_form') {
+    // Add a new header and option vlaue to display each object's model.
+    if (isset($form['children']) && isset($form['children']['remove_children']) && 
+      isset($form['children']['remove_children']['#header']) && is_array($form['children']['remove_children']['#header'])) {
+      $form['children']['remove_children']['#header']['model'] = 'Object model';
+      foreach ($form['children']['remove_children']['#options'] as $pid => $row_array) {
+        $obj = islandora_object_load($pid);
+        if (is_object($obj)) {
+          $new_array = islandora_playlist_insert_obj_model_to_array($form['children']['remove_children']['#options'][$pid], $obj, 'model', 'seq');
+          $form['children']['remove_children']['#options'][$pid] = $new_array;
+        }
+      }
+    }
+  }
+}
+
