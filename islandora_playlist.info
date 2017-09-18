@@ -2,7 +2,6 @@ name = "Islandora Playlist Solution Pack"
 description = "An Islandora module to handle playlists of Audio/Video/Oral Histories"
 dependencies[] = islandora
 dependencies[] = islandora_compound_object
-# dependencies[] = islandora_compound_object (>= 7.x-1.5)
 package = Islandora Solution Packs
 version = 7.x-dev
 core = 7.x
