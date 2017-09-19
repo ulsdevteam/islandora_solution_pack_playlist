@@ -1,46 +1,26 @@
-# Islandora Playlist Solution Pack [![Build Status](https://travis-ci.org/ulsdevteam/islandora_solution_pack_playlist.png?branch=7.x)](https://travis-ci.org/ulsdevteam/islandora_solution_pack_playlist)
+# Islandora Playlist Solution Pack [![Build Status](https://travis-ci.org/Islandora/islandora_solution_pack_compound.png?branch=7.x)](https://travis-ci.org/Islandora/islandora_solution_pack_compound)
 
 ## Introduction
 
-The Islandora Compound Object Solution Pack enables generic parent-child relationships between objects. The object view of a compound object is replaced by the view of its first child object. The included "Islandora Compound Object Navigation" block provides a thumbnail navigation of an object's siblings. A "Compound" management tab allows for the addition and removal of parent and child objects for each object.
+This solution pack is to render a single page to display a set of related multimedia files in a playlist format.  This module depends on the relationships between parent object and child objects using the Islandora Compound Object Solution Pack.  Even though multiple depths of compound object relationships are possible, "grand-children" relationships are not supported.
+
+The parent object can be any Islandora object whatsoever, but for simplicity a Large Image object can be used as the parent.  A Large Image object would have derivatives for the thumbnail and metadata that would render above the playlist;  a template variable `$compound_object_content` is populated with `drupal_render($variables['page']['content']);` during the playlist_preprocess_page routine.  The template file `templates/islandora-playlist.tpl.php` and `templates/islandora-playlist-entry.tpl.php` can both be themed, but caution should be used when overriding either.
+
+**NOTE:** each playlist should contain children that are all of the same multimedia type because there is no mechanism to switch between multimedia players between tracks.
 
 ## Installation
 
 Install as usual, see [this](https://drupal.org/documentation/install/modules-themes/modules-7) for further information.
 
-If utilizing the lazy loading image ability of the solution pack, the [JAIL](https://github.com/sebarmeli/JAIL)
-library must be present within sites/all/libraries/JAIL.
+The initial development of this module uses the [amplitudejs](https://github.com/521dimensions/amplitudejs.git) audio library for playback. This library must be present within sites/all/libraries/amplitudejs or there will be javascript errors when trying to render any playlist object page.  This library is currently being replaced to use whichever multimedia player is configured as the viewer for the Audio/Video/Oral Histories objects.
 
 ## Configuration
 
-Set the 'Child relationship predicate' and 'Solr filter query', as well as select options in Administration » Islandora » Solution pack configuration » Compound Object Solution Pack (admin/islandora/solution_pack_config/compound_object).
-
-Optionally, enable the JAIL compound block to utilize the lazy loading image
-ability as outlined below.
-
-![Configuration](https://raw.githubusercontent.com/dmoses/islandora_screenshots/master/compound-admin.png)
+This is largly dependant on the configuration for the Compound Object (admin/islandora/solution_pack_config/compound_object).
 
 **Block**:
 
-There exists two block options for displaying compound objects within Islandora.
-The default "Islandora Compound Object Navigation" block will provide navigation
-controls and loading of all objects related to the parent compound. The latter
-option is a block utilizing the [JAIL](https://github.com/sebarmeli/JAIL)
-library which allows for lazy loading of images. This allows the block to load
-images only when they are being accessed which will greatly increase performance
-on compounds with many children.
-
-**Theme**:
-
-The "Islandora Compound Object Navigation" block can be themed. See `theme_islandora_compound_prev_next()`.
-
-**Drush**:
-
-A Drush command has been added, to be run from the command line (Terminal), that will update the existing rel-predicate of existing compound objects to `isConstituentOf`. It can be run with the drush command `drush update_rels_predicate`. This command accpets no arguments.
-
-## Documentation
-
-Further documentation for this module is available at [our wiki](https://wiki.duraspace.org/display/ISLANDORA/Compound+Solution+Pack).
+This module does not use either of the blocks that the compound object creates.  Those blocks create static html links that redirect to the actual object instead of playing it.
 
 ## Troubleshooting/Issues
 
@@ -52,7 +32,7 @@ Having problems or solved a problem? Check out the Islandora google groups for a
 ## Maintainers/Sponsors
 Current maintainers:
 
-* [Jared Whiklo](https://github.com/whikloj)
+* [Brian Gillingham](https://github.com/bgilling)
 
 ## Development
 
