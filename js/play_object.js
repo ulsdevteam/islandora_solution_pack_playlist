@@ -10,8 +10,7 @@ function play_object(pid, idx) {
   jQuery.ajax({
     type: "GET",
     url: "/islandora/object/" + pid + "/get_metadata",
-    // data: {pid: pid},
-    dataType:'JSON', 
+    dataType: "html",
     success: function(response){
       document.getElementById("current_metadata").innerHTML = unescape(response);
     }
