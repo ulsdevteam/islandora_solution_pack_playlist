@@ -78,12 +78,14 @@ function islandora_playlist_get_playlist_entry_markup($idx, $child_obj, $module_
 function islandora_playlist_get_multimedia_player($parent_object, $child_islandora_objects) {
   $models = array();
   $this_model = '';
-  foreach ($child_islandora_objects as $islandora_object) {
-    $this_obj_models = $islandora_object->models;
-    if (($key = array_search('fedora-system:FedoraObject-3.0', $this_obj_models) !== FALSE)) {
-      unset($this_obj_models[$key]);
-      $this_model = array_pop($this_obj_models);
-      $models[$this_model] = $this_model;
+  if (is_array($child_islandora_objects)) {
+    foreach ($child_islandora_objects as $islandora_object) {
+      $this_obj_models = $islandora_object->models;
+      if (($key = array_search('fedora-system:FedoraObject-3.0', $this_obj_models) !== FALSE)) {
+        unset($this_obj_models[$key]);
+        $this_model = array_pop($this_obj_models);
+        $models[$this_model] = $this_model;
+      }
     }
   }
   if (count($models) > 0) {
