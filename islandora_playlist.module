@@ -80,23 +80,16 @@ function islandora_playlist_preprocess_page(array &$variables) {
     module_load_include('inc', 'islandora_playlist', 'includes/utilities');
     $results = islandora_playlist_get_compound_object_children($islandora_object);
 
-    $player = islandora_playlist_get_multimedia_player($islandora_object, $results['child_islandora_objects']);
-
     // Only alter the HTML if there are child objects coming from the call to
     // get compound object children.
     if (is_array($results['child_islandora_objects']) && count($results['child_islandora_objects']) > 0) {
       module_load_include('inc', 'islandora', 'includes/metadata');
 
-      drupal_add_js(islandora_playlist_get_compound_object_children_js_block($results['child_islandora_objects']), 'inline');
-      drupal_add_js(drupal_get_path('module', 'islandora_playlist') . '/js/play_object.js');
-      drupal_add_css(drupal_get_path('module', 'islandora_playlist') . '/css/islandora_playlist.theme.css');
-      
-      // These javascript and CSS are needed for the amplitude player... 
-      // TODO: replace this
-      drupal_add_js(drupal_get_path('module', 'islandora_playlist') . '/js/functions.js');
-      drupal_add_js('sites/all/libraries/amplitudejs/dist/amplitude.js');
-      drupal_add_js('sites/all/libraries/amplitudejs/examples/resources/js/foundation.min.js');
-      drupal_add_css(drupal_get_path('module', 'islandora_playlist') . '/css/styles.css');
+      $child_model = islandora_playlist_get_multimedia_player($islandora_object, $results['child_islandora_objects']);
+
+      if ($child_model) {
+        drupal_add_js(islandora_playlist_get_compound_object_children_js_block($results['child_islandora_objects'], $child_model), 'inline');
+      }
 
       $parent_metadata = islandora_retrieve_metadata_markup($islandora_object, TRUE);
       $original_content = drupal_render($variables['page']['content']);

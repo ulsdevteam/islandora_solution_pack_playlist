@@ -76,46 +76,101 @@ function islandora_playlist_get_playlist_entry_markup($idx, $child_obj, $module_
  *   represents the default multimedia player for the child_islandora_objects.
  */
 function islandora_playlist_get_multimedia_player($parent_object, $child_islandora_objects) {
+  $default_viewers = array();
+  if (module_exists('islandora_audio')) {
+    $islandora_audio_viewers = variable_get('islandora_audio_viewers');
+    $default_viewers['islandora:sp-audioCModel'] = $islandora_audio_viewers['default'];
+  }
+  if (module_exists('islandora_video')) {
+    $islandora_video_viewers = variable_get('islandora_video_viewers');
+    $default_viewers['islandora:sp_videoCModel'] = $islandora_video_viewers['default'];
+    if (module_exists('islandora_oralhistories')) {
+      // Since this modules is dependent on the islandora_video module, it uses
+      // the same viewer that is configured for videos.
+      $default_viewers['islandora:oralhistoriesCModel'] = $islandora_video_viewers['default'];
+    }
+  }
+
   $models = array();
-  $this_model = '';
-  if (is_array($child_islandora_objects)) {
+  if (count($child_islandora_objects) > 0) {
     foreach ($child_islandora_objects as $islandora_object) {
       $this_obj_models = $islandora_object->models;
-      if (($key = array_search('fedora-system:FedoraObject-3.0', $this_obj_models) !== FALSE)) {
-        unset($this_obj_models[$key]);
-        $this_model = array_pop($this_obj_models);
-        $models[$this_model] = $this_model;
+      if (is_array($this_obj_models)) {
+        foreach ($this_obj_models as $model) {
+          if ($model <> 'fedora-system:FedoraObject-3.0') {
+            $models[$model] = $model;
+          }
+        }
       }
     }
   }
-  if (count($models) > 0) {
+  if (count($models) > 1) {
     watchdog('islandora_playlist', t('This playlist compound object contains '
             . 'more than one type of multimedia file.  Please limit a playlist'
             . 'to only one multimedia content type. ') .
             l('Manage Compound Object', 'islandora/object/' . $parent_object->id . '/manage/compound'));
   }
 
-  $default_viewers = array();
-  if (module_exists('islandora_audio')) {
-    $islandora_audio_viewers = variable_get('islandora_audio_viewers');
-    $default_viewers['slandora:sp-audioCModel'] = $islandora_audio_viewers['default'];
-  }
-  if (module_exists('islandora_video')) {
-    $islandora_video_viewers = variable_get('islandora_video_viewers');
-    $default_viewers['islandora:sp_videoCModel'] = $islandora_video_viewers['default'];
-    if (module_exists('islandora_oralhistories')) {
-      // Since this modules is dependent on the islandora_video module, it will
-      // use the same viewer that is configured for videos.
-      $default_viewers['islandora:oralhistoriesCModel'] = $islandora_video_viewers['default'];
-    }
-  }
-  if (!isset($default_viewers[$this_model])) {
+  $key_model = array_pop($models);
+  if (!isset($default_viewers[$key_model])) {
     watchdog('islandora_playlist', t('There is no default viewer configured for ' .
             'the compound object childrens model of @this_model - ') .
             l('Manage object', 'islandora/object/' . $parent_object->id . '/manage'),
-            array('@this_model' => $this_model));
+            array('@this_model' => $key_model));
+    return FALSE;
   }
-  return $default_viewers;
+
+  // Based on the $default_viewers[$key_model], the javascript and CSS that
+  // needs to be included will be different.
+  if ($key_model == 'islandora:sp-audioCModel') {
+    drupal_add_js(drupal_get_path('module', 'islandora_playlist') . '/js/play_object.js');
+    drupal_add_css(drupal_get_path('module', 'islandora_playlist') . '/css/islandora_playlist.theme.css');
+
+    // These javascript and CSS are needed for the amplitude player...
+    // TODO: replace this
+    drupal_add_js(drupal_get_path('module', 'islandora_playlist') . '/js/functions.js');
+    drupal_add_js('sites/all/libraries/amplitudejs/dist/amplitude.js');
+    drupal_add_js('sites/all/libraries/amplitudejs/examples/resources/js/foundation.min.js');
+    drupal_add_css(drupal_get_path('module', 'islandora_playlist') . '/css/styles.css');
+  }
+
+  return $key_model;
+}
+
+/**
+ * This will return the URL of the multimedia playback url for the islandora_object
+ * based on the model
+ */
+function islandora_playlist_get_child_multimedia_url($child_islandora_object, $child_model) {
+  if ($child_model == 'islandora:sp-audioCModel') {
+    if (isset($child_islandora_object['PROXY_MP3'])) {
+      $url = '/islandora/object/' . $child_islandora_object->id . '/datastream/PROXY_MP3/view';
+    }
+    elseif (isset($child_islandora_object['MP3'])) {
+      $url = '/islandora/object/' . $child_islandora_object->id . '/datastream/MP3/view';
+    }
+    elseif (isset($child_islandora_object['OBJ'])) {
+      $url = '/islandora/object/' . $child_islandora_object->id . '/datastream/OBJ/view';
+    }
+    else {
+      $url = '';
+    }
+  }
+  elseif ($child_model == 'islandora:sp-videoCModel') {
+    if (isset($child_islandora_object['MP4'])) {
+      $url = '/islandora/object/' . $child_islandora_object->id . '/datastream/MP4/view';
+    }
+    elseif (isset($child_islandora_object['AVI'])) {
+      $url = '/islandora/object/' . $child_islandora_object->id . '/datastream/AVI/view';
+    }
+    elseif (isset($child_islandora_object['OBJ'])) {
+      $url = '/islandora/object/' . $child_islandora_object->id . '/datastream/OBJ/view';
+    }
+    else {
+      $url = '';
+    }
+  }
+  return $url;
 }
 
 /**
@@ -123,21 +178,14 @@ function islandora_playlist_get_multimedia_player($parent_object, $child_islando
  *
  * @param type $compound_object_child_playlist_entry
  */
-function islandora_playlist_get_compound_object_children_js_block($child_islandora_objects) {
+function islandora_playlist_get_compound_object_children_js_block($child_islandora_objects, $child_model) {
   $tracks_markup = array();
   if (is_array($child_islandora_objects) && (count($child_islandora_objects) > 0)) {
-    foreach ($child_islandora_objects as $islandora_object) {
-      if (isset($islandora_object['MP3'])) {
-        $url = '/islandora/object/' . $islandora_object->id . '/datastream/MP3/view';
-      }
-      elseif (isset($islandora_object['PROXY_MP3'])) {
-        $url = '/islandora/object/' . $islandora_object->id . '/datastream/PROXY_MP3/view';
-      }
-      else {
-        $url = '';
-      }
+    foreach ($child_islandora_objects as $child_islandora_object) {
+      $url = islandora_playlist_get_child_multimedia_url($child_islandora_object, $child_model);
+
       $tracks_markup[] = '{ ' .
-          '"name": "' . htmlspecialchars($islandora_object->label) . '",' .
+          '"name": "' . htmlspecialchars($child_islandora_object->label) . '",' .
           '"url": "' . $url . '",' .
           '}';
     }
