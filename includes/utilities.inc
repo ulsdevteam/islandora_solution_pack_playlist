@@ -37,30 +37,37 @@ function islandora_playlist_get_compound_object_children($islandora_object) {
     'child_islandora_objects' => is_array($objs) ? $objs : FALSE);
 }
 
-/** This will inspect the islandora object passed as $child_obj and based on the
- *  model, it will call the appropriate theme template to render each playlist
+/** This will inspect the islandora object passed as $child_islandora_object and based
+ *  on the model, it will call the appropriate theme template to render each playlist
  *  entry's markup.
  *
  * @param string $idx
- * @param object $child_obj
+ * @param object $child_islandora_object
  * @param string $module_path
  * @return string
  *   markup html for each playlist entry
  */
-function islandora_playlist_get_playlist_entry_markup($idx, $child_obj, $module_path) {
-  if (isset($child_obj['MP3'])) {
-    $url = '/islandora/object/' . $child_obj->id . '/datastream/MP3/view';
+function islandora_playlist_get_playlist_entry_markup($idx, $child_islandora_object, $module_path) {
+  $url = islandora_playlist_get_child_multimedia_url($child_islandora_object);
+  $child_model = '';
+  $this_obj_models = $child_islandora_object->models;
+  if (is_array($this_obj_models)) {
+    foreach ($this_obj_models as $model) {
+      if ($model <> 'fedora-system:FedoraObject-3.0') {
+        $child_model = $model;
+      }
+    }
   }
-  elseif (isset($child_obj['PROXY_MP3'])) {
-    $url = '/islandora/object/' . $child_obj->id . '/datastream/PROXY_MP3/view';
-  }
+  // Call the theme name based on the object model.
+  $child_model_theme_name = 'islandora_playlist' .
+      str_replace(array('islandora:','-'), '_', $child_model) . '_playlist_entry_markup';
 
-  $link_path = "javascript:play_object('" . $child_obj->id . "', '" . $idx . "')";
+  $link_path = "javascript:play_object('" . $child_islandora_object->id . "', '" . $idx . "')";
 
-  return theme('islandora_playlist_playlist_entry_markup',
+  return theme($child_model_theme_name,
       array('idx' => $idx,
             'module_path' => $module_path,
-            'child_obj' => $child_obj,
+            'child_obj' => $child_islandora_object,
             'get_metadata_link' => $link_path,
             'multimedia_url' => $url));
 }
@@ -141,7 +148,16 @@ function islandora_playlist_get_multimedia_player($parent_object, $child_islando
  * This will return the URL of the multimedia playback url for the islandora_object
  * based on the model
  */
-function islandora_playlist_get_child_multimedia_url($child_islandora_object, $child_model) {
+function islandora_playlist_get_child_multimedia_url($child_islandora_object) {
+  $this_obj_models = $child_islandora_object->models;
+  $url = $child_model = '';
+  if (is_array($this_obj_models)) {
+    foreach ($this_obj_models as $model) {
+      if ($model <> 'fedora-system:FedoraObject-3.0') {
+        $child_model = $model;
+      }
+    }
+  }
   if ($child_model == 'islandora:sp-audioCModel') {
     if (isset($child_islandora_object['PROXY_MP3'])) {
       $url = '/islandora/object/' . $child_islandora_object->id . '/datastream/PROXY_MP3/view';

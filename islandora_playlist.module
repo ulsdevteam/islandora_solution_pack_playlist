@@ -55,13 +55,23 @@ function islandora_playlist_theme($existing, $type, $theme, $path) {
           'playlist' => ''),
       'template' => 'templates/islandora-playlist',
     ),
-    'islandora_playlist_playlist_entry_markup' => array(
+    // _sp_audioCModel
+    'islandora_playlist_sp_audioCModel_playlist_entry_markup' => array(
       'variables' => array('idx' => 0,
             'module_path' => '',
             'child_obj' => NULL,
             'get_metadata_link' => '',
             'multimedia_url' => ''),
-      'template' => 'templates/islandora-playlist-entry',
+      'template' => 'templates/islandora-sp-audioCModel-playlist-entry',
+    ),
+    // _sp_videoCModel
+    'islandora_playlist_sp_videoCModel_playlist_entry_markup' => array(
+      'variables' => array('idx' => 0,
+            'module_path' => '',
+            'child_obj' => NULL,
+            'get_metadata_link' => '',
+            'multimedia_url' => ''),
+      'template' => 'templates/islandora-sp-videoCModel-playlist-entry',
     ),
   );
 }
@@ -92,7 +102,7 @@ function islandora_playlist_preprocess_page(array &$variables) {
       }
 
       $parent_metadata = islandora_retrieve_metadata_markup($islandora_object, TRUE);
-      $original_content = drupal_render($variables['page']['content']);
+      $original_content = ''; // = drupal_render($variables['page']['content']);
 
       // Remove these variables so that they there is no possibility of them
       // being rendered twice.

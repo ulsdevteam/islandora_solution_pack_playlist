@@ -2,7 +2,7 @@
 
 /**
  * @file
- * This is the template file for the object page for large image
+ * This is the template file for the playlist entry for video objects.
  *
  * Available variables:
  *  - $idx,
