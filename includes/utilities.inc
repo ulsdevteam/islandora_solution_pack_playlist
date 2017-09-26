@@ -64,7 +64,7 @@ function islandora_playlist_get_playlist_entry_markup($idx, $child_islandora_obj
 
   $link_path = "javascript:play_object('" . $child_islandora_object->id . "', '" . $idx . "')";
 
-  return theme('islandora_playlist_playlist_entry_markup',
+  return theme($child_model_theme_name,
       array('idx' => $idx,
             'module_path' => $module_path,
             'child_obj' => $child_islandora_object,
