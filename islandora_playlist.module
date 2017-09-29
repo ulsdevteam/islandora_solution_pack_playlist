@@ -52,6 +52,7 @@ function islandora_playlist_theme($existing, $type, $theme, $path) {
       'variables' => array(
           'compound_object_content' => '',
           'parent_metadata' => '',
+          'playlist_item_metadata' => '',
           'playlist' => ''),
       'template' => 'templates/islandora-playlist',
     ),
@@ -97,6 +98,8 @@ function islandora_playlist_preprocess_page(array &$variables) {
 
       $child_model = islandora_playlist_get_multimedia_player($islandora_object, $results['child_islandora_objects']);
 
+      $first_child = (count($results['child_islandora_objects']) > 0) ? array_shift($results['child_islandora_objects']) : NULL;
+      $playlist_item_metadata = is_object($first_child) ? islandora_playlist_get_metadata($first_child, FALSE) : '';
       if ($child_model) {
         drupal_add_js(islandora_playlist_get_compound_object_children_js_block($results['child_islandora_objects'], $child_model), 'inline');
       }
@@ -113,6 +116,7 @@ function islandora_playlist_preprocess_page(array &$variables) {
               array('islandora_object' => $islandora_object,
                   'compound_object_content' => $original_content,
                   'parent_metadata' => $parent_metadata,
+                  'playlist_item_metadata' => $playlist_item_metadata,
                   'playlist' => implode("\n", $results['compound_object_child_playlist_entry'])));
     }
   }
@@ -223,7 +227,7 @@ function islandora_playlist_preprocess_islandora_object_print(array &$variables)
  * Function to return the metadata for an AJAX call - called by the play_object
  * javascript in order to render that metadata as playlist entries are clicked.
  */
-function islandora_playlist_get_metadata($islandora_object) {
+function islandora_playlist_get_metadata($islandora_object, $can_exit = TRUE) {
   if (is_object($islandora_object)) {
     module_load_include('inc', 'islandora', 'includes/metadata');
     $print = islandora_retrieve_metadata_markup($islandora_object);
@@ -231,11 +235,13 @@ function islandora_playlist_get_metadata($islandora_object) {
       'islandora_object' => $islandora_object,
       'print' => $print,
     );
-    echo print_r($print, true);
-    exit;
-    
-    print theme('islandora_dublin_core_display', $elements);
-    exit;
+    if ($can_exit) {
+      echo theme('islandora_dublin_core_display', $elements);
+      exit;
+    }
+    else {
+      return theme('islandora_dublin_core_display', $elements);
+    }
   }
 }
 

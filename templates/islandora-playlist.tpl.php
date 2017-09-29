@@ -53,7 +53,7 @@
          <h3>Playlist</h3>
          <?php print $playlist; ?>
       </div>
-      <div id="current_metadata"></div>
+      <div id="current_metadata"><?php print $playlist_item_metadata; ?></div>
    </div>
 </div>
 

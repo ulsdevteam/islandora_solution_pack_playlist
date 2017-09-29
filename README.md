@@ -7,6 +7,7 @@ This solution pack is to render a single page to display a set of related multim
 The parent object can be any Islandora object whatsoever, but for simplicity a Large Image object can be used as the parent.  A Large Image object would have derivatives for the thumbnail and metadata that would render above the playlist;  a template variable `$compound_object_content` is populated with `drupal_render($variables['page']['content']);` during the playlist_preprocess_page routine.  The template file `templates/islandora-playlist.tpl.php` and `templates/islandora-playlist-entry.tpl.php` can both be themed, but caution should be used when overriding either.
 
 **NOTE:** each playlist should contain children that are all of the same multimedia type because there is no mechanism to switch between multimedia players between tracks.
+**NOTE:** This module when using the video-js library will conflict with Islandora JW Player.  In order to use this module with video-js, disable the "Islandora JW Player" module.
 
 ## Installation
 
