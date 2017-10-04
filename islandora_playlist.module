@@ -90,7 +90,6 @@ function islandora_playlist_preprocess_page(array &$variables) {
       (count($item['map']) < 4 || (isset($item['map'][3]) && $item['map'][3] <> 'datastream' && $item['map'][3] <> 'manage'))) {
     module_load_include('inc', 'islandora_playlist', 'includes/utilities');
     $results = islandora_playlist_get_compound_object_children($islandora_object);
-
     // Only alter the HTML if there are child objects coming from the call to
     // get compound object children.
     if (is_array($results['child_islandora_objects']) && count($results['child_islandora_objects']) > 0) {
@@ -98,7 +97,7 @@ function islandora_playlist_preprocess_page(array &$variables) {
 
       $child_model = islandora_playlist_get_multimedia_player($islandora_object, $results['child_islandora_objects']);
 
-      $first_child = (count($results['child_islandora_objects']) > 0) ? array_shift($results['child_islandora_objects']) : NULL;
+      $first_child = (count($results['child_islandora_objects']) > 0) ? $results['child_islandora_objects'][0] : NULL;
       $playlist_item_metadata = is_object($first_child) ? islandora_playlist_get_metadata($first_child, FALSE) : '';
       if ($child_model) {
         drupal_add_js(islandora_playlist_get_compound_object_children_js_block($results['child_islandora_objects'], $child_model), 'inline');
