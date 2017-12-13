@@ -226,11 +226,19 @@ function islandora_playlist_preprocess_islandora_object_print(array &$variables)
 /**
  * Function to return the metadata for an AJAX call - called by the play_object
  * javascript in order to render that metadata as playlist entries are clicked.
+ *
+ * This will use the islandora_solr_metadata output if it is installed.  This does
+ * not depend on the content model associations made in the configuration:
+ *    admin/islandora/search/islandora_solr_metadata/config/$
  */
 function islandora_playlist_get_metadata($islandora_object, $can_exit = TRUE) {
   if (is_object($islandora_object)) {
     module_load_include('inc', 'islandora', 'includes/metadata');
-    $print = islandora_retrieve_metadata_markup($islandora_object);
+    module_load_include('module', 'islandora_solr_metadata', 'islandora_solr_metadata');
+    if (module_exists('islandora_solr_metadata')) {
+      return islandora_solr_metadata_display_callback($islandora_object, false);
+    }
+
     $elements = array(
       'islandora_object' => $islandora_object,
       'print' => $print,
