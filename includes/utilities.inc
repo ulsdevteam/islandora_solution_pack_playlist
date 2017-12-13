@@ -199,7 +199,6 @@ function islandora_playlist_get_compound_object_children_js_block($child_islando
   if (is_array($child_islandora_objects) && (count($child_islandora_objects) > 0)) {
     foreach ($child_islandora_objects as $child_islandora_object) {
       $url = islandora_playlist_get_child_multimedia_url($child_islandora_object, $child_model);
-
       $tracks_markup[] = '{ ' .
           '"name": "' . htmlspecialchars($child_islandora_object->label) . '",' .
           '"url": "' . $url . '",' .
