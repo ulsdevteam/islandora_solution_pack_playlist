@@ -85,7 +85,7 @@ function islandora_playlist_theme($existing, $type, $theme, $path) {
  */
 function islandora_playlist_preprocess_page(array &$variables) {
   $item = menu_get_item();
-  if (isset($item['map']) && isset($item['map'][2]) && 
+  if (isset($item['map']) && isset($item['map'][2]) && ($item['map'] == 'islandora') &&
       ($islandora_object = $item['map'][2]) && is_object($islandora_object) &&
       (count($item['map']) < 4 || (isset($item['map'][3]) && $item['map'][3] <> 'datastream' && $item['map'][3] <> 'manage'))) {
     module_load_include('inc', 'islandora_playlist', 'includes/utilities');
